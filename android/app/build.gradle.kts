@@ -1,3 +1,7 @@
+// android/app/build.gradle.kts
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,40 +9,77 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
+}
+
 android {
-    namespace = "com.example.myapp"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // معرف الحزمة النهائي (غيّره لو تريد uid آخر)
+    namespace = "com.jeeey.shopin"
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
+    // استخدم compileSdk ثابت — تأكد أنك ثبتت منصة android-35
+    compileSdk = 35
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
+    // استخدم NDK المطلوب للمكتبة webview
+    ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.myapp"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        applicationId = "com.jeeey.shopin"
+
+        // دعم Android 5.0 وأحدث
+        minSdk = 21
+        targetSdk = 35
+
+        // رقم الإصدار واسم النسخة (ضبطتها حسب ما طلبت)
+        versionCode = 3034
+        versionName = "1.0.0"
+
+        vectorDrawables {
+            useSupportLibrary = true
+        }
+    }
+
+    signingConfigs {
+        // Signing config للـ release — سيقرأ القيم من android/key.properties
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = file(keystoreProperties.getProperty("storeFile") ?: "key.jks")
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+        getByName("debug") {
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("debug")
         }
+        getByName("release") {
+            // لإصدار الريليز حالياً نترك minify/shrink مغلقين لتجنب مشاكل البناء.
+            // لاحقاً إن أردت تقليل حجم الـ AAB فعّل minify و shrink مع إضافة proguard-rules.pro
+            isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
 }
